@@ -22,7 +22,7 @@ FSUB = getenv("FSUB", True)
 
 LOGGER_GROUP_ID = -1003996256161
 
-API_KEY = getenv("API_KEY", "NxGBNexGenBots1b1233")
+API_KEY = getenv("API_KEY", None)
 
 # Gen A  Fresh Api Key ( https://aistudio.google.com/app/apikey )
 
