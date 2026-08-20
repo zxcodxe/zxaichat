@@ -7,15 +7,15 @@ import logging
 from collections import defaultdict, deque
 from google import genai
 from config import API_KEY
-from ASTA_CHAT.database import astadb
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# Database Functions
+# Database Function (Lazy Import to prevent Circular Import)
 async def fetch_asta(word: str):
     try:
+        from ASTA_CHAT.database import astadb  # Function ke andar import kiya gaya hai
         word = word.lower().strip()
         x = await astadb.find_one({"word": word})
         if x:
