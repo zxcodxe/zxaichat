@@ -3,9 +3,13 @@
 # =======================================================
 
 import asyncio
+import logging
 from collections import defaultdict, deque
 from google import genai
 from config import API_KEY
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class ChatGptEs:
@@ -54,7 +58,8 @@ STYLE:
         if not api_key:
             raise ValueError("API_KEY is missing")
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-3.5-flash"
+        # FIX: Changed invalid 'gemini-3.5-flash' to valid 'gemini-2.5-flash'
+        self.model = "gemini-2.5-flash"
         self.history = defaultdict(lambda: deque(maxlen=12))
 
     def _build_prompt(self, key, message: str) -> str:
@@ -86,13 +91,14 @@ STYLE:
         key = (chat_id, user_id)
         try:
             return await asyncio.to_thread(self._ask_sync, key, message)
-        except Exception:
-            # Keep the bot useful without inventing a random/unrelated answer.
+        except Exception as e:
+            # FIX: Print error in logs so you know exact issue if something fails
+            logger.error(f"Gemini API Error: {e}", exc_info=True)
             return "Sorry, abhi answer generate nahi ho paaya 😅 ek baar phir bhejo."
 
 
 ASTA_CHAT_api = ChatGptEs(api_key=API_KEY)
 
-# ======================================================
+# =======================================================
 # ©️ 2026-27 All Rights Reserved by ASTA (ASTA) 😎
 # =======================================================
