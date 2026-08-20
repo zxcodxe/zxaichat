@@ -69,7 +69,8 @@ STYLE:
         if not api_key:
             raise ValueError("API_KEY is missing")
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-3.6-flash" 
+        # Primary model and automatic fallbacks if 503 Server Busy occurs
+        self.models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
         self.history = defaultdict(lambda: deque(maxlen=8))
 
     def _build_prompt(self, key, message: str) -> str:
@@ -93,25 +94,25 @@ STYLE:
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
         )
 
-        try:
-            # Native Async call (.aio) without blocking threads
-            response = await self.client.aio.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=config
-            )
-            
-            text = (response.text or "").strip()
-            if not text:
-                raise ValueError("Empty AI response")
+        # Loop through fallback models if primary model returns 503 High Demand
+        for model_name in self.models:
+            try:
+                response = await self.client.aio.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=config
+                )
                 
-            self.history[key].append(("User", message))
-            self.history[key].append(("Sunena", text))
-            return text
-            
-        except Exception as e:
-            logger.error(f"Gemini API Error: {e}", exc_info=True)
-            return "Sorry, abhi answer generate nahi ho paaya 😅"
+                text = (response.text or "").strip()
+                if text:
+                    self.history[key].append(("User", message))
+                    self.history[key].append(("Sunena", text))
+                    return text
+            except Exception as e:
+                logger.warning(f"Model {model_name} failed ({e}). Switching to next fallback model...")
+                await asyncio.sleep(0.1)
+
+        return "Sorry, abhi traffic jyada hai, thodi der baad try karo 😅"
 
 
 ASTA_CHAT_api = ChatGptEs(api_key=API_KEY)
