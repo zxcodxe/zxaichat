@@ -7,9 +7,22 @@ import logging
 from collections import defaultdict, deque
 from google import genai
 from config import API_KEY
+from ASTA_CHAT.database import astadb
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# Database Functions
+async def fetch_asta(word: str):
+    try:
+        word = word.lower().strip()
+        x = await astadb.find_one({"word": word})
+        if x:
+            return x.get("text")
+    except Exception as e:
+        logger.error(f"Database Fetch Error: {e}")
+    return None
 
 
 class ChatGptEs:
@@ -58,7 +71,6 @@ STYLE:
         if not api_key:
             raise ValueError("API_KEY is missing")
         self.client = genai.Client(api_key=api_key)
-        # FIX: Changed invalid 'gemini-3.5-flash' to valid 'gemini-2.5-flash'
         self.model = "gemini-2.5-flash"
         self.history = defaultdict(lambda: deque(maxlen=12))
 
@@ -92,13 +104,8 @@ STYLE:
         try:
             return await asyncio.to_thread(self._ask_sync, key, message)
         except Exception as e:
-            # FIX: Print error in logs so you know exact issue if something fails
             logger.error(f"Gemini API Error: {e}", exc_info=True)
             return "Sorry, abhi answer generate nahi ho paaya 😅 ek baar phir bhejo."
 
 
 ASTA_CHAT_api = ChatGptEs(api_key=API_KEY)
-
-# =======================================================
-# ©️ 2026-27 All Rights Reserved by ASTA (ASTA) 😎
-# =======================================================
