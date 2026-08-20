@@ -69,8 +69,8 @@ STYLE:
         if not api_key:
             raise ValueError("API_KEY is missing")
         self.client = genai.Client(api_key=api_key)
-        # Primary model and automatic fallbacks if 503 Server Busy occurs
-        self.models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+        # Updated active models list (Latest active Flash models)
+        self.models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-1.5-flash-8b"]
         self.history = defaultdict(lambda: deque(maxlen=8))
 
     def _build_prompt(self, key, message: str) -> str:
@@ -94,7 +94,6 @@ STYLE:
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
         )
 
-        # Loop through fallback models if primary model returns 503 High Demand
         for model_name in self.models:
             try:
                 response = await self.client.aio.models.generate_content(
@@ -109,10 +108,9 @@ STYLE:
                     self.history[key].append(("Sunena", text))
                     return text
             except Exception as e:
-                logger.warning(f"Model {model_name} failed ({e}). Switching to next fallback model...")
-                await asyncio.sleep(0.1)
+                logger.warning(f"Model {model_name} failed ({e}). Trying next model...")
 
-        return "Sorry, abhi traffic jyada hai, thodi der baad try karo 😅"
+        return "Sorry, abhi server thoda busy hai, try again in a moment! 😅"
 
 
 ASTA_CHAT_api = ChatGptEs(api_key=API_KEY)
