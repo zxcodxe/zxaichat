@@ -69,8 +69,8 @@ STYLE:
         if not api_key:
             raise ValueError("API_KEY is missing")
         self.client = genai.Client(api_key=api_key)
-        # Fast & lightweight model optimized for chat speed
-        self.model = "gemini-2.5-flash" 
+        # Updated to the active model
+        self.model = "gemini-3.6-flash" 
         self.history = defaultdict(lambda: deque(maxlen=8))
 
     def _build_prompt(self, key, message: str) -> str:
