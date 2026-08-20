@@ -7,17 +7,26 @@ import logging
 from collections import defaultdict, deque
 from google import genai
 from google.genai import types
-from config import API_KEY, MONGO_DB_URI  # Ensure MONGO_DB_URI is in config
 from motor.motor_asyncio import AsyncIOMotorClient
+
+# Flexible import to handle both MONGO_DB_URI and MONGO_URL
+try:
+    from config import API_KEY, MONGO_DB_URI
+except ImportError:
+    from config import API_KEY, MONGO_URL as MONGO_DB_URI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize MongoDB Connection directly here to fix import errors
 try:
-    mongo_client = AsyncIOMotorClient(MONGO_DB_URI)
-    db = mongo_client["ASTA_DB"]
-    astadb = db["asta_collection"]
+    if MONGO_DB_URI:
+        mongo_client = AsyncIOMotorClient(MONGO_DB_URI)
+        db = mongo_client["ASTA_DB"]
+        astadb = db["asta_collection"]
+    else:
+        logger.warning("MongoDB URI not provided in config.")
+        astadb = None
 except Exception as e:
     logger.error(f"MongoDB Init Error: {e}")
     astadb = None
