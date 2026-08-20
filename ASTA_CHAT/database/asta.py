@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Database Function (Lazy Import to prevent Circular Import)
 async def fetch_asta(word: str):
     try:
-        from ASTA_CHAT.database import astadb  # Function ke andar import kiya gaya hai
+        from ASTA_CHAT.database import astadb
         word = word.lower().strip()
         x = await astadb.find_one({"word": word})
         if x:
@@ -71,7 +71,8 @@ STYLE:
         if not api_key:
             raise ValueError("API_KEY is missing")
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-2.5-flash"
+        # Updated Model Name as per Google API requirement
+        self.model = "gemini-3.6-flash"
         self.history = defaultdict(lambda: deque(maxlen=12))
 
     def _build_prompt(self, key, message: str) -> str:
