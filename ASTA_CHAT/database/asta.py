@@ -18,7 +18,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize MongoDB Connection directly here to fix import errors
+# Initialize MongoDB Connection
 try:
     if MONGO_DB_URI:
         mongo_client = AsyncIOMotorClient(MONGO_DB_URI)
@@ -69,7 +69,6 @@ STYLE:
         if not api_key:
             raise ValueError("API_KEY is missing")
         self.client = genai.Client(api_key=api_key)
-        # Updated to the active model
         self.model = "gemini-3.6-flash" 
         self.history = defaultdict(lambda: deque(maxlen=8))
 
@@ -85,33 +84,31 @@ STYLE:
             "Reply naturally to the latest user message."
         )
 
-    def _ask_sync(self, key, message: str) -> str:
+    async def ask_question(self, message: str, chat_id: int = 0, user_id: int = 0) -> str:
+        key = (chat_id, user_id)
         prompt = self._build_prompt(key, message)
         
-        # Disable tools & AFC for instant generation
         config = types.GenerateContentConfig(
             temperature=0.7,
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
         )
-        
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config=config
-        )
-        
-        text = (response.text or "").strip()
-        if not text:
-            raise ValueError("Empty AI response")
-            
-        self.history[key].append(("User", message))
-        self.history[key].append(("Sunena", text))
-        return text
 
-    async def ask_question(self, message: str, chat_id: int = 0, user_id: int = 0) -> str:
-        key = (chat_id, user_id)
         try:
-            return await asyncio.to_thread(self._ask_sync, key, message)
+            # Native Async call (.aio) without blocking threads
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=config
+            )
+            
+            text = (response.text or "").strip()
+            if not text:
+                raise ValueError("Empty AI response")
+                
+            self.history[key].append(("User", message))
+            self.history[key].append(("Sunena", text))
+            return text
+            
         except Exception as e:
             logger.error(f"Gemini API Error: {e}", exc_info=True)
             return "Sorry, abhi answer generate nahi ho paaya 😅"
