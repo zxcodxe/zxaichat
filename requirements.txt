@@ -1,0 +1,10 @@
+pymongo
+motor
+requests
+dnspython
+tgcrypto
+asyncio
+python-dotenv
+aiohttp
+pyrofork
+google-genai
