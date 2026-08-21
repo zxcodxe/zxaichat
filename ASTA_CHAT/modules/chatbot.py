@@ -43,20 +43,18 @@ async def get_ai_response(prompt_text: str):
     def call_gemini():
         try:
             response = ai_client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.6-flash",
                 contents=prompt_text,
             )
 
             if response is None:
                 return None
 
-            # New Google GenAI SDK response
             text = getattr(response, "text", None)
 
             if text:
                 return str(text).strip()
 
-            # Fallback response extraction
             candidates = getattr(response, "candidates", None)
 
             if not candidates:
@@ -106,23 +104,19 @@ async def chatbot_handler(client, message):
 
     user_prompt = message.text
 
-    # Ignore empty messages
     if not user_prompt:
         return
 
-    # Ignore commands
     if user_prompt.startswith("/"):
         return
 
     try:
-        # Generate Gemini response
         reply_text = await get_ai_response(user_prompt)
 
         if not reply_text:
             LOGGER.warning("Gemini returned an empty response.")
             return
 
-        # Send reply
         await message.reply_text(reply_text)
 
     except Exception:
