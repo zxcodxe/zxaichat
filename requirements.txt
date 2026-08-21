@@ -6,4 +6,4 @@ dnspython
 requests
 aiohttp
 python-dotenv
-google-generativeai
+google-genai
