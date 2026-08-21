@@ -37,10 +37,23 @@ else:
 # ==========================================================
 
 async def get_ai_response(prompt_text: str):
+
     if ai_client is None:
+        LOGGER.error("Gemini client is not initialized.")
+        return None
+
+    # Make sure prompt is actually valid
+    if not isinstance(prompt_text, str):
+        return None
+
+    prompt_text = prompt_text.strip()
+
+    if not prompt_text:
+        LOGGER.warning("Empty prompt received. Skipping Gemini request.")
         return None
 
     def call_gemini():
+
         try:
             response = ai_client.models.generate_content(
                 model="gemini-3.6-flash",
@@ -53,8 +66,12 @@ async def get_ai_response(prompt_text: str):
             text = getattr(response, "text", None)
 
             if text:
-                return str(text).strip()
+                text = str(text).strip()
 
+                if text:
+                    return text
+
+            # Fallback response extraction
             candidates = getattr(response, "candidates", None)
 
             if not candidates:
@@ -63,6 +80,7 @@ async def get_ai_response(prompt_text: str):
             result = []
 
             for candidate in candidates:
+
                 content = getattr(candidate, "content", None)
 
                 if content is None:
@@ -74,10 +92,14 @@ async def get_ai_response(prompt_text: str):
                     continue
 
                 for part in parts:
+
                     part_text = getattr(part, "text", None)
 
                     if part_text:
-                        result.append(str(part_text))
+                        part_text = str(part_text).strip()
+
+                        if part_text:
+                            result.append(part_text)
 
             if result:
                 return "\n".join(result).strip()
@@ -102,21 +124,37 @@ async def get_ai_response(prompt_text: str):
 )
 async def chatbot_handler(client, message):
 
-    user_prompt = message.text
-
-    if not user_prompt:
-        return
-
-    if user_prompt.startswith("/"):
-        return
-
     try:
-        reply_text = await get_ai_response(user_prompt)
 
-        if not reply_text:
-            LOGGER.warning("Gemini returned an empty response.")
+        # Get message text safely
+        user_prompt = message.text
+
+        # Ignore missing text
+        if not isinstance(user_prompt, str):
             return
 
+        # Remove unnecessary spaces
+        user_prompt = user_prompt.strip()
+
+        # Ignore empty messages
+        if not user_prompt:
+            return
+
+        # Ignore Telegram commands
+        if user_prompt.startswith("/"):
+            return
+
+        # Generate AI response
+        reply_text = await get_ai_response(user_prompt)
+
+        # No response
+        if not reply_text:
+            LOGGER.warning(
+                "Gemini returned an empty response."
+            )
+            return
+
+        # Send response
         await message.reply_text(reply_text)
 
     except Exception:
