@@ -1,17 +1,21 @@
 import asyncio
 from pyrogram import filters
 from ASTA_CHAT import app
-import google.generativeai as genai
+from google import genai
 import config
 
-# Configure Gemini API safely
+# Naye SDK ke saath client setup
+ai_client = None
 if config.API_KEY:
-    genai.configure(api_key=config.API_KEY)
+    ai_client = genai.Client(api_key=config.API_KEY)
 
 async def get_ai_response(prompt_text):
     def call_gemini():
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt_text)
+        # Naye SDK ka official syntax: client.models.generate_content
+        response = ai_client.models.generate_content(
+            model='gemini-2.5-flash',  # ya 'gemini-1.5-flash'
+            contents=prompt_text,
+        )
         return response.text
     return await asyncio.to_thread(call_gemini)
 
@@ -19,12 +23,11 @@ async def get_ai_response(prompt_text):
 async def chatbot_handler(client, message):
     user_prompt = message.text
     
-    # Ignore commands or empty inputs
+    # Commands aur empty messages ko ignore karo
     if not user_prompt or user_prompt.startswith("/"):
         return
 
     try:
-        # Prevent event loop blockage by running typing action asynchronously
         await client.send_chat_action(message.chat.id, "typing")
         
         reply_text = await get_ai_response(user_prompt)
@@ -34,4 +37,3 @@ async def chatbot_handler(client, message):
             
     except Exception as e:
         print(f"Chatbot Error: {e}")
-        # Fail silently or log to avoid flooding chat with error notes during high traffic
