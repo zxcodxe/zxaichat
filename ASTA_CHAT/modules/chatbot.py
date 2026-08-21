@@ -11,7 +11,6 @@ import config
 # LOGGING
 # ==========================================================
 
-logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger("ASTA_CHAT_CHATBOT")
 
 
@@ -21,12 +20,14 @@ LOGGER = logging.getLogger("ASTA_CHAT_CHATBOT")
 
 ai_client = None
 
-if getattr(config, "API_KEY", None):
+API_KEY = getattr(config, "API_KEY", None)
+
+if API_KEY:
     try:
-        ai_client = genai.Client(api_key=config.API_KEY)
+        ai_client = genai.Client(api_key=API_KEY)
         LOGGER.info("Gemini AI client initialized successfully.")
-    except Exception as e:
-        LOGGER.error(f"Failed to initialize Gemini client: {e}")
+    except Exception:
+        LOGGER.exception("Failed to initialize Gemini client.")
 else:
     LOGGER.error("API_KEY is missing in config.py")
 
@@ -36,7 +37,7 @@ else:
 # ==========================================================
 
 async def get_ai_response(prompt_text: str):
-    if not ai_client:
+    if ai_client is None:
         return None
 
     def call_gemini():
@@ -49,42 +50,44 @@ async def get_ai_response(prompt_text: str):
             if response is None:
                 return None
 
-            # Safely get generated text
+            # New Google GenAI SDK response
             text = getattr(response, "text", None)
 
             if text:
                 return str(text).strip()
 
-            # Fallback: inspect candidates/content parts
+            # Fallback response extraction
             candidates = getattr(response, "candidates", None)
 
-            if candidates:
-                for candidate in candidates:
-                    content = getattr(candidate, "content", None)
+            if not candidates:
+                return None
 
-                    if not content:
-                        continue
+            result = []
 
-                    parts = getattr(content, "parts", None)
+            for candidate in candidates:
+                content = getattr(candidate, "content", None)
 
-                    if not parts:
-                        continue
+                if content is None:
+                    continue
 
-                    texts = []
+                parts = getattr(content, "parts", None)
 
-                    for part in parts:
-                        part_text = getattr(part, "text", None)
+                if not parts:
+                    continue
 
-                        if part_text:
-                            texts.append(str(part_text))
+                for part in parts:
+                    part_text = getattr(part, "text", None)
 
-                    if texts:
-                        return "\n".join(texts).strip()
+                    if part_text:
+                        result.append(str(part_text))
+
+            if result:
+                return "\n".join(result).strip()
 
             return None
 
-        except Exception as e:
-            LOGGER.error(f"Gemini request error: {type(e).__name__}: {e}")
+        except Exception:
+            LOGGER.exception("Gemini request failed.")
             return None
 
     return await asyncio.to_thread(call_gemini)
@@ -107,31 +110,20 @@ async def chatbot_handler(client, message):
     if not user_prompt:
         return
 
-    # Ignore Telegram commands
+    # Ignore commands
     if user_prompt.startswith("/"):
         return
 
     try:
-        # Typing indicator
-        await client.send_chat_action(
-            message.chat.id,
-            "typing",
-        )
-
-        # Generate AI response
+        # Generate Gemini response
         reply_text = await get_ai_response(user_prompt)
 
-        # No response from Gemini
         if not reply_text:
+            LOGGER.warning("Gemini returned an empty response.")
             return
 
-        # Send response
-        await message.reply_text(
-            reply_text,
-            disable_web_page_preview=True,
-        )
+        # Send reply
+        await message.reply_text(reply_text)
 
-    except Exception as e:
-        LOGGER.error(
-            f"Chatbot Handler Error: {type(e).__name__}: {e}"
-        )
+    except Exception:
+        LOGGER.exception("CHATBOT FULL ERROR")
