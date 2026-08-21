@@ -1,40 +1,37 @@
-# =======================================================
-# ©️ 2026-27 All Rights Reserved by ASTA (ASTA) 🚀
-# =======================================================
-
-import logging
+import asyncio
 from pyrogram import filters
 from ASTA_CHAT import app
-from ASTA_CHAT.database.asta import fetch_asta, ASTA_CHAT_api
+import google.generativeai as genai
+import config
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure Gemini API safely
+if config.API_KEY:
+    genai.configure(api_key=config.API_KEY)
 
+async def get_ai_response(prompt_text):
+    def call_gemini():
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt_text)
+        return response.text
+    return await asyncio.to_thread(call_gemini)
 
-@app.on_message(filters.text & ~filters.private)
-async def chatbot_reply(_, message):
-    if not message.text:
+@app.on_message(filters.text & ~filters.bot & ~filters.via_bot)
+async def chatbot_handler(client, message):
+    user_prompt = message.text
+    
+    # Ignore commands or empty inputs
+    if not user_prompt or user_prompt.startswith("/"):
         return
 
-    user_message = message.text.strip()
-    chat_id = message.chat.id
-    user_id = message.from_user.id if message.from_user else 0
-
     try:
-        # Step 1: Check Database first
-        reply = await fetch_asta(user_message)
-
-        # Step 2: If not in DB, use Sunena AI (ChatGptEs)
-        if not reply:
-            reply = await ASTA_CHAT_api.ask_question(
-                message=user_message,
-                chat_id=chat_id,
-                user_id=user_id
-            )
-
-        if reply:
-            await message.reply_text(reply)
-
+        # Prevent event loop blockage by running typing action asynchronously
+        await client.send_chat_action(message.chat.id, "typing")
+        
+        reply_text = await get_ai_response(user_prompt)
+        
+        if reply_text:
+            await message.reply_text(reply_text)
+            
     except Exception as e:
-        logger.error(f"Chatbot Module Error: {e}", exc_info=True)
-        await message.reply_text("Sorry, abhi answer generate nahi ho paaya 😅 ek baar phir bhejo.")
+        print(f"Chatbot Error: {e}")
+        # Fail silently or log to avoid flooding chat with error notes during high traffic
