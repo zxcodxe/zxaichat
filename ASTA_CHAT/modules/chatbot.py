@@ -59,46 +59,102 @@ IMPORTANT:
 
 
 # ==========================================================
+# API KEYS
+# ==========================================================
+
+GEMINI_API_KEY = getattr(config, "API_KEY", None)
+GROQ_API_KEY = getattr(config, "GROQ_API_KEY", None)
+MISTRAL_API_KEY = getattr(config, "MISTRAL_API_KEY", None)
+
+
+# ==========================================================
+# CLIENTS
+# ==========================================================
+
+gemini_client = None
+groq_client = None
+mistral_client = None
+
+
+# ==========================================================
 # GEMINI CLIENT
 # ==========================================================
 
-ai_client = None
-
-API_KEY = getattr(config, "API_KEY", None)
-
-if API_KEY:
+if GEMINI_API_KEY:
     try:
-        ai_client = genai.Client(api_key=API_KEY)
+        gemini_client = genai.Client(
+            api_key=GEMINI_API_KEY
+        )
         LOGGER.info("Gemini AI client initialized successfully.")
     except Exception:
-        LOGGER.exception("Failed to initialize Gemini client.")
-else:
-    LOGGER.error("API_KEY is missing in config.py")
-
-
-# ==========================================================
-# GEMINI RESPONSE
-# ==========================================================
-
-async def get_ai_response(prompt_text: str):
-
-    if ai_client is None:
-        LOGGER.error("Gemini client is not initialized.")
-        return None
-
-    if not isinstance(prompt_text, str):
-        return None
-
-    prompt_text = prompt_text.strip()
-
-    if not prompt_text:
-        LOGGER.warning(
-            "Empty prompt received. Skipping Gemini request."
+        LOGGER.exception(
+            "Failed to initialize Gemini client."
         )
-        return None
+else:
+    LOGGER.warning(
+        "Gemini API_KEY is missing in config.py"
+    )
 
-    # Combine identity instructions with user message
-    full_prompt = f"""
+
+# ==========================================================
+# GROQ CLIENT
+# ==========================================================
+
+if GROQ_API_KEY:
+    try:
+        from groq import Groq
+
+        groq_client = Groq(
+            api_key=GROQ_API_KEY
+        )
+
+        LOGGER.info(
+            "Groq AI client initialized successfully."
+        )
+
+    except Exception:
+        LOGGER.exception(
+            "Failed to initialize Groq client."
+        )
+else:
+    LOGGER.warning(
+        "GROQ_API_KEY is missing."
+    )
+
+
+# ==========================================================
+# MISTRAL CLIENT
+# ==========================================================
+
+if MISTRAL_API_KEY:
+    try:
+        from mistralai import Mistral
+
+        mistral_client = Mistral(
+            api_key=MISTRAL_API_KEY
+        )
+
+        LOGGER.info(
+            "Mistral AI client initialized successfully."
+        )
+
+    except Exception:
+        LOGGER.exception(
+            "Failed to initialize Mistral client."
+        )
+else:
+    LOGGER.warning(
+        "MISTRAL_API_KEY is missing."
+    )
+
+
+# ==========================================================
+# COMMON PROMPT
+# ==========================================================
+
+def build_prompt(prompt_text: str):
+
+    return f"""
 {AI_IDENTITY}
 
 USER MESSAGE:
@@ -107,10 +163,21 @@ USER MESSAGE:
 Reply naturally to the user.
 """
 
-    def call_gemini():
+
+# ==========================================================
+# GEMINI
+# ==========================================================
+
+async def ask_gemini(full_prompt: str):
+
+    if gemini_client is None:
+        return None
+
+    def call():
 
         try:
-            response = ai_client.models.generate_content(
+
+            response = gemini_client.models.generate_content(
                 model="gemini-3.6-flash",
                 contents=full_prompt,
             )
@@ -118,17 +185,24 @@ Reply naturally to the user.
             if response is None:
                 return None
 
-            # Primary response extraction
-            text = getattr(response, "text", None)
+            text = getattr(
+                response,
+                "text",
+                None
+            )
 
             if text:
+
                 text = str(text).strip()
 
                 if text:
                     return text
 
-            # Fallback response extraction
-            candidates = getattr(response, "candidates", None)
+            candidates = getattr(
+                response,
+                "candidates",
+                None
+            )
 
             if not candidates:
                 return None
@@ -137,36 +211,305 @@ Reply naturally to the user.
 
             for candidate in candidates:
 
-                content = getattr(candidate, "content", None)
+                content = getattr(
+                    candidate,
+                    "content",
+                    None
+                )
 
                 if content is None:
                     continue
 
-                parts = getattr(content, "parts", None)
+                parts = getattr(
+                    content,
+                    "parts",
+                    None
+                )
 
                 if not parts:
                     continue
 
                 for part in parts:
 
-                    part_text = getattr(part, "text", None)
+                    part_text = getattr(
+                        part,
+                        "text",
+                        None
+                    )
 
                     if part_text:
-                        part_text = str(part_text).strip()
+
+                        part_text = str(
+                            part_text
+                        ).strip()
 
                         if part_text:
-                            result.append(part_text)
+                            result.append(
+                                part_text
+                            )
 
             if result:
-                return "\n".join(result).strip()
+                return "\n".join(
+                    result
+                ).strip()
 
             return None
 
-        except Exception:
-            LOGGER.exception("Gemini request failed.")
+        except Exception as e:
+
+            LOGGER.warning(
+                "Gemini failed: %s",
+                e
+            )
+
             return None
 
-    return await asyncio.to_thread(call_gemini)
+    return await asyncio.to_thread(call)
+
+
+# ==========================================================
+# GROQ
+# ==========================================================
+
+async def ask_groq(full_prompt: str):
+
+    if groq_client is None:
+        return None
+
+    def call():
+
+        try:
+
+            response = groq_client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": full_prompt,
+                    }
+                ],
+                temperature=0.8,
+                max_tokens=500,
+            )
+
+            if not response:
+                return None
+
+            choices = getattr(
+                response,
+                "choices",
+                None
+            )
+
+            if not choices:
+                return None
+
+            content = getattr(
+                choices[0].message,
+                "content",
+                None
+            )
+
+            if not content:
+                return None
+
+            content = str(
+                content
+            ).strip()
+
+            return content or None
+
+        except Exception as e:
+
+            LOGGER.warning(
+                "Groq failed: %s",
+                e
+            )
+
+            return None
+
+    return await asyncio.to_thread(call)
+
+
+# ==========================================================
+# MISTRAL
+# ==========================================================
+
+async def ask_mistral(full_prompt: str):
+
+    if mistral_client is None:
+        return None
+
+    def call():
+
+        try:
+
+            response = mistral_client.chat.complete(
+                model="mistral-small-latest",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": full_prompt,
+                    }
+                ],
+                temperature=0.8,
+                max_tokens=500,
+            )
+
+            if not response:
+                return None
+
+            choices = getattr(
+                response,
+                "choices",
+                None
+            )
+
+            if not choices:
+                return None
+
+            message = getattr(
+                choices[0],
+                "message",
+                None
+            )
+
+            if message is None:
+                return None
+
+            content = getattr(
+                message,
+                "content",
+                None
+            )
+
+            if not content:
+                return None
+
+            content = str(
+                content
+            ).strip()
+
+            return content or None
+
+        except Exception as e:
+
+            LOGGER.warning(
+                "Mistral failed: %s",
+                e
+            )
+
+            return None
+
+    return await asyncio.to_thread(call)
+
+
+# ==========================================================
+# AI RESPONSE
+# ==========================================================
+
+async def get_ai_response(prompt_text: str):
+
+    if not isinstance(prompt_text, str):
+        return None
+
+    prompt_text = prompt_text.strip()
+
+    if not prompt_text:
+        LOGGER.warning(
+            "Empty prompt received."
+        )
+        return None
+
+    full_prompt = build_prompt(
+        prompt_text
+    )
+
+
+    # ======================================================
+    # 1. GEMINI
+    # ======================================================
+
+    if gemini_client is not None:
+
+        LOGGER.info(
+            "Trying Gemini..."
+        )
+
+        response = await ask_gemini(
+            full_prompt
+        )
+
+        if response:
+            LOGGER.info(
+                "Gemini response received."
+            )
+            return response
+
+        LOGGER.warning(
+            "Gemini unavailable. Switching to Groq..."
+        )
+
+
+    # ======================================================
+    # 2. GROQ
+    # ======================================================
+
+    if groq_client is not None:
+
+        LOGGER.info(
+            "Trying Groq..."
+        )
+
+        response = await ask_groq(
+            full_prompt
+        )
+
+        if response:
+            LOGGER.info(
+                "Groq response received."
+            )
+            return response
+
+        LOGGER.warning(
+            "Groq unavailable. Switching to Mistral..."
+        )
+
+
+    # ======================================================
+    # 3. MISTRAL
+    # ======================================================
+
+    if mistral_client is not None:
+
+        LOGGER.info(
+            "Trying Mistral..."
+        )
+
+        response = await ask_mistral(
+            full_prompt
+        )
+
+        if response:
+            LOGGER.info(
+                "Mistral response received."
+            )
+            return response
+
+        LOGGER.warning(
+            "Mistral unavailable."
+        )
+
+
+    # ======================================================
+    # ALL AI FAILED
+    # ======================================================
+
+    LOGGER.warning(
+        "All AI providers failed."
+    )
+
+    return None
 
 
 # ==========================================================
@@ -182,36 +525,41 @@ async def chatbot_handler(client, message):
 
     try:
 
-        # Get message text safely
         user_prompt = message.text
 
-        # Ignore missing text
-        if not isinstance(user_prompt, str):
+        if not isinstance(
+            user_prompt,
+            str
+        ):
             return
 
-        # Remove unnecessary spaces
         user_prompt = user_prompt.strip()
 
-        # Ignore empty messages
         if not user_prompt:
             return
 
-        # Ignore Telegram commands
         if user_prompt.startswith("/"):
             return
 
-        # Generate AI response
-        reply_text = await get_ai_response(user_prompt)
+        reply_text = await get_ai_response(
+            user_prompt
+        )
 
-        # No response
         if not reply_text:
+
+            # Existing behaviour kept unchanged.
             LOGGER.warning(
-                "Gemini returned an empty response."
+                "AI returned an empty response."
             )
+
             return
 
-        # Send response
-        await message.reply_text(reply_text)
+        await message.reply_text(
+            reply_text
+        )
 
     except Exception:
-        LOGGER.exception("CHATBOT FULL ERROR")
+
+        LOGGER.exception(
+            "CHATBOT FULL ERROR"
+        )
