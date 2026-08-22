@@ -1,15 +1,12 @@
 import asyncio
 import logging
 
+import requests
 from pyrogram import filters
 from ASTA_CHAT import app
 from google import genai
 import config
 
-
-# ==========================================================
-# LOGGING
-# ==========================================================
 
 LOGGER = logging.getLogger("ASTA_CHAT_CHATBOT")
 
@@ -64,46 +61,24 @@ IMPORTANT:
 # ==========================================================
 # API KEYS
 # ==========================================================
-#
-# Heroku Config Vars:
-#
-# API_KEY          = Gemini API Key
-# GROQ_API_KEY     = Groq API Key
-# MISTRAL_API_KEY  = Mistral API Key
-#
-# ==========================================================
 
-GEMINI_API_KEY = getattr(
-    config,
-    "API_KEY",
-    None
-)
-
-GROQ_API_KEY = getattr(
-    config,
-    "GROQ_API_KEY",
-    None
-)
-
-MISTRAL_API_KEY = getattr(
-    config,
-    "MISTRAL_API_KEY",
-    None
-)
+GEMINI_API_KEY = getattr(config, "API_KEY", None)
+GROQ_API_KEY = getattr(config, "GROQ_API_KEY", None)
+MISTRAL_API_KEY = getattr(config, "MISTRAL_API_KEY", None)
 
 
-# ==========================================================
-# CLEAN API KEYS
-# ==========================================================
+def clean_key(key):
+    if not isinstance(key, str):
+        return None
 
-if isinstance(GEMINI_API_KEY, str):
-    GEMINI_API_KEY = GEMINI_API_KEY.strip()
+    key = key.strip()
 
-if isinstance(GROQ_API_KEY, str):
-    GROQ_API_KEY = GROQ_API_KEY.strip()
+    return key or None
 
-if isinstance(MISTRAL_API_KEY, str):
-    MISTRAL_API_KEY = MISTRAL_API_KEY.strip()
+
+GEMINI_API_KEY = clean_key(GEMINI_API_KEY)
+GROQ_API_KEY = clean_key(GROQ_API_KEY)
+MISTRAL_API_KEY = clean_key(MISTRAL_API_KEY)
 
 
 # ==========================================================
@@ -112,17 +87,15 @@ if isinstance(MISTRAL_API_KEY, str):
 
 gemini_client = None
 groq_client = None
-mistral_client = None
 
 
 # ==========================================================
-# GEMINI CLIENT
+# GEMINI
 # ==========================================================
 
 if GEMINI_API_KEY:
 
     try:
-
         gemini_client = genai.Client(
             api_key=GEMINI_API_KEY
         )
@@ -145,7 +118,7 @@ else:
 
 
 # ==========================================================
-# GROQ CLIENT
+# GROQ
 # ==========================================================
 
 if GROQ_API_KEY:
@@ -176,28 +149,15 @@ else:
 
 
 # ==========================================================
-# MISTRAL CLIENT
+# MISTRAL
+# Direct HTTP API - no mistralai SDK required
 # ==========================================================
 
 if MISTRAL_API_KEY:
 
-    try:
-
-        from mistralai import Mistral
-
-        mistral_client = Mistral(
-            api_key=MISTRAL_API_KEY
-        )
-
-        LOGGER.info(
-            "Mistral AI client initialized successfully."
-        )
-
-    except Exception:
-
-        LOGGER.exception(
-            "Failed to initialize Mistral client."
-        )
+    LOGGER.info(
+        "Mistral API key loaded successfully."
+    )
 
 else:
 
@@ -210,7 +170,7 @@ else:
 # COMMON PROMPT
 # ==========================================================
 
-def build_prompt(prompt_text: str):
+def build_prompt(prompt_text):
 
     return f"""
 {AI_IDENTITY}
@@ -226,7 +186,7 @@ Reply naturally to the user.
 # GEMINI
 # ==========================================================
 
-async def ask_gemini(full_prompt: str):
+async def ask_gemini(full_prompt):
 
     if gemini_client is None:
         return None
@@ -251,9 +211,7 @@ async def ask_gemini(full_prompt: str):
 
             if text:
 
-                text = str(
-                    text
-                ).strip()
+                text = str(text).strip()
 
                 if text:
                     return text
@@ -309,10 +267,7 @@ async def ask_gemini(full_prompt: str):
                             )
 
             if result:
-
-                return "\n".join(
-                    result
-                ).strip()
+                return "\n".join(result).strip()
 
             return None
 
@@ -334,7 +289,7 @@ async def ask_gemini(full_prompt: str):
 # GROQ
 # ==========================================================
 
-async def ask_groq(full_prompt: str):
+async def ask_groq(full_prompt):
 
     if groq_client is None:
         return None
@@ -347,9 +302,13 @@ async def ask_groq(full_prompt: str):
                 model="openai/gpt-oss-120b",
                 messages=[
                     {
+                        "role": "system",
+                        "content": AI_IDENTITY,
+                    },
+                    {
                         "role": "user",
                         "content": full_prompt,
-                    }
+                    },
                 ],
                 temperature=0.8,
                 max_tokens=500,
@@ -367,10 +326,8 @@ async def ask_groq(full_prompt: str):
             if not choices:
                 return None
 
-            first_choice = choices[0]
-
             message = getattr(
-                first_choice,
+                choices[0],
                 "message",
                 None
             )
@@ -387,9 +344,7 @@ async def ask_groq(full_prompt: str):
             if not content:
                 return None
 
-            content = str(
-                content
-            ).strip()
+            content = str(content).strip()
 
             return content or None
 
@@ -411,62 +366,74 @@ async def ask_groq(full_prompt: str):
 # MISTRAL
 # ==========================================================
 
-async def ask_mistral(full_prompt: str):
+async def ask_mistral(full_prompt):
 
-    if mistral_client is None:
+    if not MISTRAL_API_KEY:
         return None
 
     def call_mistral():
 
         try:
 
-            response = mistral_client.chat.complete(
-                model="mistral-small-latest",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": full_prompt,
-                    }
-                ],
-                temperature=0.8,
-                max_tokens=500,
+            response = requests.post(
+                "https://api.mistral.ai/v1/chat/completions",
+                headers={
+                    "Authorization": (
+                        f"Bearer {MISTRAL_API_KEY}"
+                    ),
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "mistral-small-latest",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": AI_IDENTITY,
+                        },
+                        {
+                            "role": "user",
+                            "content": full_prompt,
+                        },
+                    ],
+                    "temperature": 0.8,
+                    "max_tokens": 500,
+                },
+                timeout=30,
             )
 
-            if response is None:
+            if not response.ok:
+
+                LOGGER.warning(
+                    "Mistral HTTP %s: %s",
+                    response.status_code,
+                    response.text[:300],
+                )
+
                 return None
 
-            choices = getattr(
-                response,
+            data = response.json()
+
+            choices = data.get(
                 "choices",
-                None
+                []
             )
 
             if not choices:
                 return None
 
-            first_choice = choices[0]
-
-            message = getattr(
-                first_choice,
+            message = choices[0].get(
                 "message",
-                None
+                {}
             )
 
-            if message is None:
-                return None
-
-            content = getattr(
-                message,
-                "content",
-                None
+            content = message.get(
+                "content"
             )
 
             if not content:
                 return None
 
-            content = str(
-                content
-            ).strip()
+            content = str(content).strip()
 
             return content or None
 
@@ -488,22 +455,14 @@ async def ask_mistral(full_prompt: str):
 # AI RESPONSE
 # ==========================================================
 
-async def get_ai_response(prompt_text: str):
+async def get_ai_response(prompt_text):
 
-    if not isinstance(
-        prompt_text,
-        str
-    ):
+    if not isinstance(prompt_text, str):
         return None
 
     prompt_text = prompt_text.strip()
 
     if not prompt_text:
-
-        LOGGER.warning(
-            "Empty prompt received. Skipping AI request."
-        )
-
         return None
 
     full_prompt = build_prompt(
@@ -569,7 +528,7 @@ async def get_ai_response(prompt_text: str):
     # 3. MISTRAL
     # ======================================================
 
-    if mistral_client is not None:
+    if MISTRAL_API_KEY:
 
         LOGGER.info(
             "Trying Mistral..."
@@ -593,7 +552,7 @@ async def get_ai_response(prompt_text: str):
 
 
     # ======================================================
-    # ALL AI FAILED
+    # ALL FAILED
     # ======================================================
 
     LOGGER.warning(
@@ -619,29 +578,29 @@ async def chatbot_handler(
 
     try:
 
-        user_prompt = message.text
+        original_text = message.text
 
         if not isinstance(
-            user_prompt,
+            original_text,
             str
         ):
             return
 
-        user_prompt = user_prompt.strip()
+        original_text = original_text.strip()
 
-        if not user_prompt:
+        if not original_text:
             return
 
         # ==================================================
-        # IGNORE TELEGRAM COMMANDS
+        # IGNORE COMMANDS
         # ==================================================
 
-        if user_prompt.startswith("/"):
+        if original_text.startswith("/"):
             return
 
 
         # ==================================================
-        # GET BOT INFO
+        # BOT INFO
         # ==================================================
 
         bot_info = await client.get_me()
@@ -651,11 +610,7 @@ async def chatbot_handler(
 
 
         # ==================================================
-        # TRIGGER CHECK
-        #
-        # 1. @BotUsername mention
-        # 2. Reply to bot's message
-        # 3. "hello ai" trigger
+        # TRIGGERS
         # ==================================================
 
         is_mentioned = False
@@ -664,40 +619,54 @@ async def chatbot_handler(
 
 
         # ==================================================
-        # @BOT USERNAME MENTION
+        # @BOT USERNAME
         # ==================================================
+
+        user_prompt = original_text
 
         if bot_username:
 
-            mention = f"@{bot_username}".lower()
+            mention = f"@{bot_username}"
 
-            if mention in user_prompt.lower():
+            if mention.lower() in user_prompt.lower():
 
                 is_mentioned = True
 
-                # Remove mention from AI prompt
-                user_prompt = user_prompt.replace(
-                    f"@{bot_username}",
-                    "",
-                ).strip()
+                # Remove mention case-insensitively
+                lower_text = user_prompt.lower()
+                lower_mention = mention.lower()
+
+                index = lower_text.find(
+                    lower_mention
+                )
+
+                if index != -1:
+
+                    user_prompt = (
+                        user_prompt[:index]
+                        + user_prompt[
+                            index + len(mention):
+                        ]
+                    ).strip()
 
 
         # ==================================================
-        # REPLY TO BOT MESSAGE
+        # REPLY TO BOT
         # ==================================================
 
-        if message.reply_to_message:
+        replied_message = (
+            message.reply_to_message
+        )
 
-            replied_message = (
-                message.reply_to_message
+        if replied_message:
+
+            replied_user = (
+                replied_message.from_user
             )
 
-            if replied_message.from_user:
+            if replied_user:
 
-                if (
-                    replied_message.from_user.id
-                    == bot_id
-                ):
+                if replied_user.id == bot_id:
 
                     is_reply_to_bot = True
 
@@ -712,7 +681,7 @@ async def chatbot_handler(
 
 
         # ==================================================
-        # IGNORE UNRELATED MESSAGES
+        # IGNORE NORMAL GROUP MESSAGES
         # ==================================================
 
         if not (
@@ -720,22 +689,25 @@ async def chatbot_handler(
             or is_reply_to_bot
             or is_hello_ai
         ):
-
             return
 
 
         # ==================================================
-        # AI RESPONSE
+        # EMPTY AFTER MENTION
         # ==================================================
 
         if not user_prompt:
 
-            # Existing behaviour kept unchanged.
-            LOGGER.warning(
-                "AI trigger received without a message."
+            LOGGER.info(
+                "AI trigger received without text."
             )
 
             return
+
+
+        # ==================================================
+        # GET AI RESPONSE
+        # ==================================================
 
         reply_text = await get_ai_response(
             user_prompt
@@ -743,16 +715,22 @@ async def chatbot_handler(
 
         if not reply_text:
 
-            # Existing behaviour kept unchanged.
+            # Existing behaviour unchanged.
             LOGGER.warning(
                 "AI returned an empty response."
             )
 
             return
 
+
+        # ==================================================
+        # SEND RESPONSE
+        # ==================================================
+
         await message.reply_text(
             reply_text
         )
+
 
     except Exception:
 
