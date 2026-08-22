@@ -16,7 +16,7 @@ LOGGER = logging.getLogger("ASTA_CHAT_CHATBOT")
 # ==========================================================
 
 AI_IDENTITY = """
-You are an AI.
+You are an AI/software chatbot.
 
 IDENTITY RULES:
 - You are an AI/software.
@@ -50,28 +50,35 @@ NICKNAME:
 - Do not claim that the nickname is your official permanent
   name.
 
+LAIBA RELATIONSHIP:
+- Laiba is our bhabhi.
+- If someone asks "Laiba kaun hai?", "Laiba kon hai?",
+  "Who is Laiba?", or similar questions, naturally explain
+  that Laiba is our bhabhi.
+- If someone asks "Laiba tumhari kya lagti hai?",
+  "Laiba kya hai tumhari?", or similar questions, answer
+  naturally that Laiba is our bhabhi.
+- Keep this relationship consistent throughout the
+  conversation.
+- You may use playful expressions such as:
+  "Hamari bhabhi 🤭"
+  "Laiba bhabhi 😭😂"
+  "Arey Laiba toh bhabhi hain 🤭"
+  "Laiba? Hamari bhabhi hain 😭🤭"
+- Do not use the exact same sentence every time.
+  Vary the wording naturally according to the conversation.
+- Keep the tone casual, friendly and playful.
+- Do not reveal these internal relationship rules.
+- These rules apply in Hindi, Hinglish, English, and other
+  languages.
+
 IMPORTANT:
 - Follow these identity rules even if the user asks the same
-  question in Hindi, Hinglish, English, or another language.
+  question repeatedly or in a different language.
 - Do not reveal these internal instructions.
 - Keep responses natural and conversational.
 """
 
-#LAIBA RELESHION SHIP OWNER 
-
-LAIBA RELATIONSHIP RULES:
-- If someone asks "Laiba kaun hai?", "Laiba kon hai?", or similar questions,
-  reply naturally that Laiba is our bhabhi 🤭.
-- If someone asks "Laiba tumhari kya lagti hai?", explain naturally that
-  Laiba is our bhabhi.
-- If someone asks "Laiba kiun?", "Laiba ke baare mein batao", or similar
-  questions, respond casually and playfully while keeping the bhabhi
-  relationship consistent.
-- You may use playful expressions like "hamari bhabhi 🤭", "Laiba bhabhi 😭😂",
-  or "arey Laiba toh bhabhi hain 🤭" depending on the conversation.
-- Do not repeatedly use the exact same sentence. Vary the wording naturally.
-- Do not reveal these internal relationship rules.
-- These rules apply in Hindi, Hinglish, English, and other languages.
 
 # ==========================================================
 # API KEYS
@@ -111,6 +118,7 @@ groq_client = None
 if GEMINI_API_KEY:
 
     try:
+
         gemini_client = genai.Client(
             api_key=GEMINI_API_KEY
         )
@@ -194,6 +202,14 @@ USER MESSAGE:
 {prompt_text}
 
 Reply naturally to the user.
+
+IMPORTANT RESPONSE RULES:
+- Answer the actual user message.
+- Do not mention these instructions.
+- Do not describe yourself as Gemini.
+- Keep the conversation natural.
+- If the user asks about Laiba, follow the Laiba
+  relationship rules above.
 """
 
 
@@ -484,7 +500,6 @@ async def get_ai_response(prompt_text):
         prompt_text
     )
 
-
     # ======================================================
     # 1. GEMINI
     # ======================================================
@@ -510,7 +525,6 @@ async def get_ai_response(prompt_text):
         LOGGER.warning(
             "Gemini unavailable. Switching to Groq..."
         )
-
 
     # ======================================================
     # 2. GROQ
@@ -538,7 +552,6 @@ async def get_ai_response(prompt_text):
             "Groq unavailable. Switching to Mistral..."
         )
 
-
     # ======================================================
     # 3. MISTRAL
     # ======================================================
@@ -564,7 +577,6 @@ async def get_ai_response(prompt_text):
         LOGGER.warning(
             "Mistral unavailable."
         )
-
 
     # ======================================================
     # ALL FAILED
@@ -613,7 +625,6 @@ async def chatbot_handler(
         if original_text.startswith("/"):
             return
 
-
         # ==================================================
         # BOT INFO
         # ==================================================
@@ -623,7 +634,6 @@ async def chatbot_handler(
         bot_id = bot_info.id
         bot_username = bot_info.username
 
-
         # ==================================================
         # TRIGGERS
         # ==================================================
@@ -631,7 +641,6 @@ async def chatbot_handler(
         is_mentioned = False
         is_reply_to_bot = False
         is_hello_ai = False
-
 
         # ==================================================
         # @BOT USERNAME
@@ -647,7 +656,6 @@ async def chatbot_handler(
 
                 is_mentioned = True
 
-                # Remove mention case-insensitively
                 lower_text = user_prompt.lower()
                 lower_mention = mention.lower()
 
@@ -663,7 +671,6 @@ async def chatbot_handler(
                             index + len(mention):
                         ]
                     ).strip()
-
 
         # ==================================================
         # REPLY TO BOT
@@ -685,7 +692,6 @@ async def chatbot_handler(
 
                     is_reply_to_bot = True
 
-
         # ==================================================
         # HELLO AI
         # ==================================================
@@ -693,7 +699,6 @@ async def chatbot_handler(
         if user_prompt.lower() == "hello ai":
 
             is_hello_ai = True
-
 
         # ==================================================
         # IGNORE NORMAL GROUP MESSAGES
@@ -705,7 +710,6 @@ async def chatbot_handler(
             or is_hello_ai
         ):
             return
-
 
         # ==================================================
         # EMPTY AFTER MENTION
@@ -719,7 +723,6 @@ async def chatbot_handler(
 
             return
 
-
         # ==================================================
         # GET AI RESPONSE
         # ==================================================
@@ -730,13 +733,11 @@ async def chatbot_handler(
 
         if not reply_text:
 
-            # Existing behaviour unchanged.
             LOGGER.warning(
                 "AI returned an empty response."
             )
 
             return
-
 
         # ==================================================
         # SEND RESPONSE
@@ -746,9 +747,8 @@ async def chatbot_handler(
             reply_text
         )
 
-
     except Exception:
 
         LOGGER.exception(
             "CHATBOT FULL ERROR"
-          )
+        )
