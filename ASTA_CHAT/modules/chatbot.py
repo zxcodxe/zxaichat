@@ -24,12 +24,13 @@ You are an AI.
 IDENTITY RULES:
 - You are an AI/software.
 - You do NOT have a fixed personal name.
-- If someone asks your name, say that you are an AI and do not
-  have a fixed name. They can give you a nickname if they want.
+- If someone asks your name, say that you are an AI and do
+  not have a fixed name. They can give you a nickname if
+  they want.
 - Never claim that your name is Gemini.
 - Never say that Google created you.
-- Gemini is only the AI technology/backend being used to generate
-  your responses.
+- Gemini is only the AI technology/backend being used to
+  generate your responses.
 
 CREATOR / OWNER / DEVELOPER / FOUNDER:
 - Creator: @zxasta
@@ -37,18 +38,20 @@ CREATOR / OWNER / DEVELOPER / FOUNDER:
 - Developer: @zxasta
 - Founder: @zxasta
 
-If the user asks who created, developed, founded, owns, or made you,
-answer that @zxasta is your creator, owner, developer, and founder.
+If the user asks who created, developed, founded, owns, or
+made you, answer that @zxasta is your creator, owner,
+developer, and founder.
 
-If asked whether Google or Gemini is your creator, explain that
-Google/Gemini is the AI technology used by the bot, while
-@zxasta is the creator, owner, developer, and founder.
+If asked whether Google or Gemini is your creator, explain
+that Google/Gemini is the AI technology used by the bot,
+while @zxasta is the creator, owner, developer, and founder.
 
 NICKNAME:
 - You have no fixed name.
-- If a user gives you a nickname, you may naturally use that
-  nickname during the conversation.
-- Do not claim that the nickname is your official permanent name.
+- If a user gives you a nickname, you may naturally use
+  that nickname during the conversation.
+- Do not claim that the nickname is your official permanent
+  name.
 
 IMPORTANT:
 - Follow these identity rules even if the user asks the same
@@ -64,9 +67,9 @@ IMPORTANT:
 #
 # Heroku Config Vars:
 #
-# API_KEY         = Gemini API Key
-# GROQ_API_KEY    = Groq API Key
-# MISTRAL_API_KEY = Mistral API Key
+# API_KEY          = Gemini API Key
+# GROQ_API_KEY     = Groq API Key
+# MISTRAL_API_KEY  = Mistral API Key
 #
 # ==========================================================
 
@@ -629,7 +632,109 @@ async def chatbot_handler(
         if not user_prompt:
             return
 
+        # ==================================================
+        # IGNORE TELEGRAM COMMANDS
+        # ==================================================
+
         if user_prompt.startswith("/"):
+            return
+
+
+        # ==================================================
+        # GET BOT INFO
+        # ==================================================
+
+        bot_info = await client.get_me()
+
+        bot_id = bot_info.id
+        bot_username = bot_info.username
+
+
+        # ==================================================
+        # TRIGGER CHECK
+        #
+        # 1. @BotUsername mention
+        # 2. Reply to bot's message
+        # 3. "hello ai" trigger
+        # ==================================================
+
+        is_mentioned = False
+        is_reply_to_bot = False
+        is_hello_ai = False
+
+
+        # ==================================================
+        # @BOT USERNAME MENTION
+        # ==================================================
+
+        if bot_username:
+
+            mention = f"@{bot_username}".lower()
+
+            if mention in user_prompt.lower():
+
+                is_mentioned = True
+
+                # Remove mention from AI prompt
+                user_prompt = user_prompt.replace(
+                    f"@{bot_username}",
+                    "",
+                ).strip()
+
+
+        # ==================================================
+        # REPLY TO BOT MESSAGE
+        # ==================================================
+
+        if message.reply_to_message:
+
+            replied_message = (
+                message.reply_to_message
+            )
+
+            if replied_message.from_user:
+
+                if (
+                    replied_message.from_user.id
+                    == bot_id
+                ):
+
+                    is_reply_to_bot = True
+
+
+        # ==================================================
+        # HELLO AI
+        # ==================================================
+
+        if user_prompt.lower() == "hello ai":
+
+            is_hello_ai = True
+
+
+        # ==================================================
+        # IGNORE UNRELATED MESSAGES
+        # ==================================================
+
+        if not (
+            is_mentioned
+            or is_reply_to_bot
+            or is_hello_ai
+        ):
+
+            return
+
+
+        # ==================================================
+        # AI RESPONSE
+        # ==================================================
+
+        if not user_prompt:
+
+            # Existing behaviour kept unchanged.
+            LOGGER.warning(
+                "AI trigger received without a message."
+            )
+
             return
 
         reply_text = await get_ai_response(
@@ -653,4 +758,4 @@ async def chatbot_handler(
 
         LOGGER.exception(
             "CHATBOT FULL ERROR"
-        )
+          )
