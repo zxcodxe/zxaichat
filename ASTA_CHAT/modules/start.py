@@ -13,7 +13,7 @@ from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, Message
 from pyrogram.enums import ChatType
 
-from config import STICKER, FSUB, IMG, LOGGER_GROUP_ID, OWNER_ID, SUPPORT_GROUP, UPDATES_CHANNEL
+from config import FSUB, IMG, LOGGER_GROUP_ID, OWNER_ID, SUPPORT_GROUP, UPDATES_CHANNEL
 from ASTA_CHAT import app
 from ASTA_CHAT.database import add_user, add_chat, get_fsub, chatsdb
 
