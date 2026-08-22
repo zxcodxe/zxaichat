@@ -61,10 +61,55 @@ IMPORTANT:
 # ==========================================================
 # API KEYS
 # ==========================================================
+#
+# Heroku:
+#
+# API_KEY=GEMINI_KEY|GROQ_KEY|MISTRAL_KEY
+#
+# #1 = Gemini
+# #2 = Groq
+# #3 = Mistral
+#
+# ==========================================================
 
-GEMINI_API_KEY = getattr(config, "API_KEY", None)
-GROQ_API_KEY = getattr(config, "GROQ_API_KEY", None)
-MISTRAL_API_KEY = getattr(config, "MISTRAL_API_KEY", None)
+RAW_API_KEYS = getattr(
+    config,
+    "API_KEY",
+    ""
+)
+
+if not isinstance(RAW_API_KEYS, str):
+    RAW_API_KEYS = ""
+
+AI_KEYS = [
+    key.strip()
+    for key in RAW_API_KEYS.split("|")
+    if key.strip()
+]
+
+
+# #1 Gemini
+GEMINI_API_KEY = (
+    AI_KEYS[0]
+    if len(AI_KEYS) > 0
+    else None
+)
+
+
+# #2 Groq
+GROQ_API_KEY = (
+    AI_KEYS[1]
+    if len(AI_KEYS) > 1
+    else None
+)
+
+
+# #3 Mistral
+MISTRAL_API_KEY = (
+    AI_KEYS[2]
+    if len(AI_KEYS) > 2
+    else None
+)
 
 
 # ==========================================================
@@ -81,18 +126,27 @@ mistral_client = None
 # ==========================================================
 
 if GEMINI_API_KEY:
+
     try:
+
         gemini_client = genai.Client(
             api_key=GEMINI_API_KEY
         )
-        LOGGER.info("Gemini AI client initialized successfully.")
+
+        LOGGER.info(
+            "Gemini AI client initialized successfully."
+        )
+
     except Exception:
+
         LOGGER.exception(
             "Failed to initialize Gemini client."
         )
+
 else:
+
     LOGGER.warning(
-        "Gemini API_KEY is missing in config.py"
+        "Gemini API key is missing."
     )
 
 
@@ -101,7 +155,9 @@ else:
 # ==========================================================
 
 if GROQ_API_KEY:
+
     try:
+
         from groq import Groq
 
         groq_client = Groq(
@@ -113,12 +169,15 @@ if GROQ_API_KEY:
         )
 
     except Exception:
+
         LOGGER.exception(
             "Failed to initialize Groq client."
         )
+
 else:
+
     LOGGER.warning(
-        "GROQ_API_KEY is missing."
+        "Groq API key is missing."
     )
 
 
@@ -127,7 +186,9 @@ else:
 # ==========================================================
 
 if MISTRAL_API_KEY:
+
     try:
+
         from mistralai import Mistral
 
         mistral_client = Mistral(
@@ -139,12 +200,15 @@ if MISTRAL_API_KEY:
         )
 
     except Exception:
+
         LOGGER.exception(
             "Failed to initialize Mistral client."
         )
+
 else:
+
     LOGGER.warning(
-        "MISTRAL_API_KEY is missing."
+        "Mistral API key is missing."
     )
 
 
@@ -173,7 +237,7 @@ async def ask_gemini(full_prompt: str):
     if gemini_client is None:
         return None
 
-    def call():
+    def call_gemini():
 
         try:
 
@@ -193,7 +257,9 @@ async def ask_gemini(full_prompt: str):
 
             if text:
 
-                text = str(text).strip()
+                text = str(
+                    text
+                ).strip()
 
                 if text:
                     return text
@@ -249,6 +315,7 @@ async def ask_gemini(full_prompt: str):
                             )
 
             if result:
+
                 return "\n".join(
                     result
                 ).strip()
@@ -258,13 +325,15 @@ async def ask_gemini(full_prompt: str):
         except Exception as e:
 
             LOGGER.warning(
-                "Gemini failed: %s",
+                "Gemini request failed: %s",
                 e
             )
 
             return None
 
-    return await asyncio.to_thread(call)
+    return await asyncio.to_thread(
+        call_gemini
+    )
 
 
 # ==========================================================
@@ -276,7 +345,7 @@ async def ask_groq(full_prompt: str):
     if groq_client is None:
         return None
 
-    def call():
+    def call_groq():
 
         try:
 
@@ -292,7 +361,7 @@ async def ask_groq(full_prompt: str):
                 max_tokens=500,
             )
 
-            if not response:
+            if response is None:
                 return None
 
             choices = getattr(
@@ -304,72 +373,10 @@ async def ask_groq(full_prompt: str):
             if not choices:
                 return None
 
-            content = getattr(
-                choices[0].message,
-                "content",
-                None
-            )
-
-            if not content:
-                return None
-
-            content = str(
-                content
-            ).strip()
-
-            return content or None
-
-        except Exception as e:
-
-            LOGGER.warning(
-                "Groq failed: %s",
-                e
-            )
-
-            return None
-
-    return await asyncio.to_thread(call)
-
-
-# ==========================================================
-# MISTRAL
-# ==========================================================
-
-async def ask_mistral(full_prompt: str):
-
-    if mistral_client is None:
-        return None
-
-    def call():
-
-        try:
-
-            response = mistral_client.chat.complete(
-                model="mistral-small-latest",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": full_prompt,
-                    }
-                ],
-                temperature=0.8,
-                max_tokens=500,
-            )
-
-            if not response:
-                return None
-
-            choices = getattr(
-                response,
-                "choices",
-                None
-            )
-
-            if not choices:
-                return None
+            first_choice = choices[0]
 
             message = getattr(
-                choices[0],
+                first_choice,
                 "message",
                 None
             )
@@ -395,13 +402,92 @@ async def ask_mistral(full_prompt: str):
         except Exception as e:
 
             LOGGER.warning(
-                "Mistral failed: %s",
+                "Groq request failed: %s",
                 e
             )
 
             return None
 
-    return await asyncio.to_thread(call)
+    return await asyncio.to_thread(
+        call_groq
+    )
+
+
+# ==========================================================
+# MISTRAL
+# ==========================================================
+
+async def ask_mistral(full_prompt: str):
+
+    if mistral_client is None:
+        return None
+
+    def call_mistral():
+
+        try:
+
+            response = mistral_client.chat.complete(
+                model="mistral-small-latest",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": full_prompt,
+                    }
+                ],
+                temperature=0.8,
+                max_tokens=500,
+            )
+
+            if response is None:
+                return None
+
+            choices = getattr(
+                response,
+                "choices",
+                None
+            )
+
+            if not choices:
+                return None
+
+            first_choice = choices[0]
+
+            message = getattr(
+                first_choice,
+                "message",
+                None
+            )
+
+            if message is None:
+                return None
+
+            content = getattr(
+                message,
+                "content",
+                None
+            )
+
+            if not content:
+                return None
+
+            content = str(
+                content
+            ).strip()
+
+            return content or None
+
+        except Exception as e:
+
+            LOGGER.warning(
+                "Mistral request failed: %s",
+                e
+            )
+
+            return None
+
+    return await asyncio.to_thread(
+        call_mistral
+    )
 
 
 # ==========================================================
@@ -410,15 +496,20 @@ async def ask_mistral(full_prompt: str):
 
 async def get_ai_response(prompt_text: str):
 
-    if not isinstance(prompt_text, str):
+    if not isinstance(
+        prompt_text,
+        str
+    ):
         return None
 
     prompt_text = prompt_text.strip()
 
     if not prompt_text:
+
         LOGGER.warning(
-            "Empty prompt received."
+            "Empty prompt received. Skipping AI request."
         )
+
         return None
 
     full_prompt = build_prompt(
@@ -441,9 +532,11 @@ async def get_ai_response(prompt_text: str):
         )
 
         if response:
+
             LOGGER.info(
                 "Gemini response received."
             )
+
             return response
 
         LOGGER.warning(
@@ -466,9 +559,11 @@ async def get_ai_response(prompt_text: str):
         )
 
         if response:
+
             LOGGER.info(
                 "Groq response received."
             )
+
             return response
 
         LOGGER.warning(
@@ -491,9 +586,11 @@ async def get_ai_response(prompt_text: str):
         )
 
         if response:
+
             LOGGER.info(
                 "Mistral response received."
             )
+
             return response
 
         LOGGER.warning(
@@ -521,7 +618,10 @@ async def get_ai_response(prompt_text: str):
     & ~filters.bot
     & ~filters.via_bot
 )
-async def chatbot_handler(client, message):
+async def chatbot_handler(
+    client,
+    message
+):
 
     try:
 
