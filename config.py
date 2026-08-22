@@ -78,58 +78,41 @@ LOGGER_GROUP_ID = -1003996256161
 # AI API KEYS
 # ==========================================================
 #
-# Heroku Config Var:
+# Heroku Config Vars:
 #
-# API_KEY=GEMINI_KEY|GROQ_KEY|MISTRAL_KEY
-#
-# #1 = Gemini
-# #2 = Groq
-# #3 = Mistral
+# API_KEY        = Gemini API Key
+# GROQ_API_KEY   = Groq API Key
+# MISTRAL_API_KEY = Mistral API Key
 #
 # ==========================================================
 
 API_KEY = getenv(
     "API_KEY",
-    ""
-).strip()
-
-
-AI_KEYS = [
-    key.strip()
-    for key in API_KEY.split("|")
-    if key.strip()
-]
-
-
-# ==========================================================
-# INDIVIDUAL AI KEYS
-# ==========================================================
-
-GEMINI_API_KEY = (
-    AI_KEYS[0]
-    if len(AI_KEYS) >= 1
-    else None
+    None
 )
 
-GROQ_API_KEY = (
-    AI_KEYS[1]
-    if len(AI_KEYS) >= 2
-    else None
+GROQ_API_KEY = getenv(
+    "GROQ_API_KEY",
+    None
 )
 
-MISTRAL_API_KEY = (
-    AI_KEYS[2]
-    if len(AI_KEYS) >= 3
-    else None
+MISTRAL_API_KEY = getenv(
+    "MISTRAL_API_KEY",
+    None
 )
 
 
 # ==========================================================
 # AI KEY STATUS
 # ==========================================================
+#
+# Sirf ye check karta hai ki key configured hai ya nahi.
+# Actual API keys kabhi log nahi hoti.
+#
+# ==========================================================
 
 AI_KEY_STATUS = {
-    "gemini": bool(GEMINI_API_KEY),
+    "gemini": bool(API_KEY),
     "groq": bool(GROQ_API_KEY),
     "mistral": bool(MISTRAL_API_KEY),
 }
