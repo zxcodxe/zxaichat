@@ -62,54 +62,45 @@ IMPORTANT:
 # API KEYS
 # ==========================================================
 #
-# Heroku:
+# Heroku Config Vars:
 #
-# API_KEY=GEMINI_KEY|GROQ_KEY|MISTRAL_KEY
-#
-# #1 = Gemini
-# #2 = Groq
-# #3 = Mistral
+# API_KEY         = Gemini API Key
+# GROQ_API_KEY    = Groq API Key
+# MISTRAL_API_KEY = Mistral API Key
 #
 # ==========================================================
 
-RAW_API_KEYS = getattr(
+GEMINI_API_KEY = getattr(
     config,
     "API_KEY",
-    ""
+    None
 )
 
-if not isinstance(RAW_API_KEYS, str):
-    RAW_API_KEYS = ""
+GROQ_API_KEY = getattr(
+    config,
+    "GROQ_API_KEY",
+    None
+)
 
-AI_KEYS = [
-    key.strip()
-    for key in RAW_API_KEYS.split("|")
-    if key.strip()
-]
-
-
-# #1 Gemini
-GEMINI_API_KEY = (
-    AI_KEYS[0]
-    if len(AI_KEYS) > 0
-    else None
+MISTRAL_API_KEY = getattr(
+    config,
+    "MISTRAL_API_KEY",
+    None
 )
 
 
-# #2 Groq
-GROQ_API_KEY = (
-    AI_KEYS[1]
-    if len(AI_KEYS) > 1
-    else None
-)
+# ==========================================================
+# CLEAN API KEYS
+# ==========================================================
 
+if isinstance(GEMINI_API_KEY, str):
+    GEMINI_API_KEY = GEMINI_API_KEY.strip()
 
-# #3 Mistral
-MISTRAL_API_KEY = (
-    AI_KEYS[2]
-    if len(AI_KEYS) > 2
-    else None
-)
+if isinstance(GROQ_API_KEY, str):
+    GROQ_API_KEY = GROQ_API_KEY.strip()
+
+if isinstance(MISTRAL_API_KEY, str):
+    MISTRAL_API_KEY = MISTRAL_API_KEY.strip()
 
 
 # ==========================================================
