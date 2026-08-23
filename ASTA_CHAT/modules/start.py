@@ -15,7 +15,7 @@ from ASTA_CHAT import app
 
 START_IMAGE = (
     "https://graph.org/file/"
-    "58be901c3dda208cb9952-aa7d82ea69302892d5.jpg"
+    "9bdf36b86a38660129902-d9b13eebf332fb6b0e.jpg"
 )
 
 
