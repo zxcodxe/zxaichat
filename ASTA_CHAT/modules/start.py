@@ -10,20 +10,33 @@ from ASTA_CHAT import app
 
 
 # =======================================================
+# START IMAGE
+# =======================================================
+
+START_IMAGE = (
+    "https://graph.org/file/"
+    "58be901c3dda208cb9952-aa7d82ea69302892d5.jpg"
+)
+
+
+# =======================================================
 # START TEXT
 # =======================================================
 
 def get_start_text():
-    bot_name = getattr(app, "name", None) or "ASTA CHAT"
+    bot_name = getattr(app, "name", None) or "Zenithaibot"
 
     return f"""
-**๏ ᴛʜɪs ɪs ˹ {bot_name} ˼ 🍃**
+**๏ ᴛʜɪs ɪs  ˹ {bot_name} ˼  🍃**
+
 **➻ ᴀ ғᴀsᴛ & ᴘᴏᴡᴇʀғᴜʟ ᴀɪ & ᴍᴀɴᴀɢᴇᴍᴇɴᴛ ʙᴏᴛ**
+
 **▸ 𝐀ɪ ᴄʜᴀᴛ • sᴍᴀʀᴛ ʀᴇsᴘᴏɴsᴇs 🤖**
 **▸ 𝐒ᴇᴄᴜʀɪᴛʏ • ᴀɴᴛɪ-sᴘᴀᴍ ✨**
 **▸ 𝐌ᴀɴᴀɢᴇ • ᴀᴜᴛᴏ-ʀᴇᴘʟʏ & ɴᴏᴛᴇs 🍃**
 **────────────────────**
-**๏ ᴘᴏᴡᴇʀᴇᴅ ʙʏ [ᴀsᴛᴀ ꭙ ꜱᴜᴘᴘᴏʀᴛ](https://t.me/ixasta1)**
+
+**๏ ᴘᴏᴡᴇʀᴇᴅ ʙʏ  ˹ ᴀsᴛᴀ ꭙ ꜱᴜᴘᴘᴏʀᴛ ˼**
 """
 
 
@@ -34,28 +47,28 @@ def get_start_text():
 def get_start_buttons():
     bot_username = getattr(app, "username", None)
 
-    if not bot_username:
+    if bot_username:
+        bot_username = bot_username.lstrip("@")
+
         return InlineKeyboardMarkup(
             [
                 [
                     InlineKeyboardButton(
-                        "๏ ᴀsᴛᴀ ꭙ sᴜᴘᴘᴏʀᴛ",
-                        url="https://t.me/ixasta1",
+                        "✚ ᴧᴅᴅ ϻᴇ ɪη ʏσυʀ ɢʀσυᴘ ✚",
+                        url=f"https://t.me/{bot_username}?startgroup=true",
                     )
                 ]
             ]
         )
 
-    bot_username = bot_username.lstrip("@")
-
     return InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton(
-                    "✚ ᴧᴅᴅ ϻᴇ ɪη ʏσυʀ ɢʀσυᴘ ✚",
-                    url=f"https://t.me/{bot_username}?startgroup=true",
+                    "๏ ᴀsᴛᴀ ꭙ sᴜᴘᴘᴏʀᴛ",
+                    url="https://t.me/ixasta1",
                 )
-            ],
+            ]
         ]
     )
 
@@ -67,10 +80,10 @@ def get_start_buttons():
 @app.on_message(filters.command("start"))
 async def start_command(client, message: Message):
 
-    await message.reply_text(
-        text=get_start_text(),
+    await message.reply_photo(
+        photo=START_IMAGE,
+        caption=get_start_text(),
         reply_markup=get_start_buttons(),
-        disable_web_page_preview=True,
     )
 
 
