@@ -27,14 +27,15 @@ def get_start_text():
     bot_name = getattr(app, "name", None) or "Zenithaibot"
 
     return f"""
-**๏ ᴛʜɪs ɪs   {0}   🍃**
+**๏ ᴛʜɪs ɪs   {bot_name}   🍃**
 
 **➻ ᴀ ғᴀsᴛ & ᴘᴏᴡᴇʀғᴜʟ ᴀɪ & ᴍᴀɴᴀɢᴇᴍᴇɴᴛ ʙᴏᴛ**
 
 **▸ 𝐀ɪ ᴄʜᴀᴛ • sᴍᴀʀᴛ ʀᴇsᴘᴏɴsᴇs 🤖**
 **▸ 𝐒ᴇᴄᴜʀɪᴛʏ • ᴀɴᴛɪ-sᴘᴀᴍ ✨**
 **▸ 𝐌ᴀɴᴀɢᴇ • ᴀᴜᴛᴏ-ʀᴇᴘʟʏ & ɴᴏᴛᴇs 🍃**
-**────────────────────**"""
+**────────────────────**
+"""
 
 
 # =======================================================
@@ -44,26 +45,17 @@ def get_start_text():
 def get_start_buttons():
     bot_username = getattr(app, "username", None)
 
-    if bot_username:
-        bot_username = bot_username.lstrip("@")
+    if not bot_username:
+        return None
 
-        return InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        "✚ ᴧᴅᴅ ϻᴇ ɪη ʏσυʀ ɢʀσυᴘ ✚",
-                        url=f"https://t.me/{bot_username}?startgroup=true",
-                    )
-                ]
-            ]
-        )
+    bot_username = bot_username.lstrip("@")
 
     return InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton(
-                    "๏ ᴀsᴛᴀ ꭙ sᴜᴘᴘᴏʀᴛ",
-                    url="https://t.me/ixasta1",
+                    "✚ ᴧᴅᴅ ϻᴇ ɪη ʏσυʀ ɢʀσυᴘ ✚",
+                    url=f"https://t.me/{bot_username}?startgroup=true",
                 )
             ]
         ]
