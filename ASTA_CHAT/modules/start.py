@@ -9,15 +9,6 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from ASTA_CHAT import app
 
 
-# =======================================================
-# START IMAGE
-# =======================================================
-
-START_IMAGE = (
-    "https://graph.org/file/"
-    "9bdf36b86a38660129902-d9b13eebf332fb6b0e.jpg"
-)
-
 
 # =======================================================
 # START TEXT
