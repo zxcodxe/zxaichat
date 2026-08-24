@@ -13,17 +13,21 @@ from pyrogram import idle
 from ASTA_CHAT import app
 from ASTA_CHAT.modules import ALL_MODULES
 
-async def boot():
-    await app.start()
 
+async def boot():
     for module in ALL_MODULES:
         importlib.import_module(f"ASTA_CHAT.modules.{module}")
 
+    await app.start()
+
     await idle()
+
     await app.stop()
+
 
 if __name__ == "__main__":
     app.run(boot())
+
 
 # ======================================================
 # ©️ 2026-27 All Rights Reserved by ASTA (ASTA) 😎
