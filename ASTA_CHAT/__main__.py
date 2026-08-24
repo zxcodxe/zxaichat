@@ -15,8 +15,11 @@ from ASTA_CHAT.modules import ALL_MODULES
 
 
 async def boot():
+
     for module in ALL_MODULES:
-        importlib.import_module(f"ASTA_CHAT.modules.{module}")
+        importlib.import_module(
+            f"ASTA_CHAT.modules.{module}"
+        )
 
     await app.start()
 
