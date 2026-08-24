@@ -68,12 +68,18 @@ def get_start_buttons():
 
 @app.on_message(filters.command("start"))
 async def start_command(client, message: Message):
+    try:
+        await message.reply_photo(
+            photo=START_IMAGE,
+            caption=get_start_text(),
+            reply_markup=get_start_buttons(),
+        )
 
-    await message.reply_photo(
-        photo=START_IMAGE,
-        caption=get_start_text(),
-        reply_markup=get_start_buttons(),
-    )
+    except Exception:
+        await message.reply_text(
+            get_start_text(),
+            reply_markup=get_start_buttons(),
+        )
 
 
 # =======================================================
