@@ -25,9 +25,17 @@ START_IMAGE = (
 
 def get_start_text():
     bot_name = getattr(app, "name", None) or "Zenithaibot"
+    bot_username = getattr(app, "username", None)
+
+    if bot_username:
+        bot_username = bot_username.lstrip("@")
+        bot_link = f"https://t.me/{bot_username}"
+        bot_display = f"[{bot_name}]({bot_link})"
+    else:
+        bot_display = bot_name
 
     return f"""
-**๏ ᴛʜɪs ɪs   {bot_name}   🍃**
+**๏ ᴛʜɪs ɪs ˹ {bot_display} ˼ 🍃**
 
 **➻ ᴀ ғᴀsᴛ & ᴘᴏᴡᴇʀғᴜʟ ᴀɪ & ᴍᴀɴᴀɢᴇᴍᴇɴᴛ ʙᴏᴛ**
 
