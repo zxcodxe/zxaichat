@@ -35,7 +35,7 @@ def get_start_text():
         bot_display = bot_name
 
     return f"""
-**๏ ᴛʜɪs ɪs ˹ {bot_display} ˼ 🍃**
+**๏ ᴛʜɪs ɪs  {bot_display}  🍃**
 
 **➻ ᴀ ғᴀsᴛ & ᴘᴏᴡᴇʀғᴜʟ ᴀɪ & ᴍᴀɴᴀɢᴇᴍᴇɴᴛ ʙᴏᴛ**
 
