@@ -4,7 +4,12 @@
 # =======================================================
 
 from pyrogram import filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
+from pyrogram.types import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    CallbackQuery,
+    Message,
+)
 
 from ASTA_CHAT import app
 
@@ -35,19 +40,21 @@ def get_start_text():
         bot_display = bot_name
 
     return f"""
-**๏ ᴛʜɪs ɪs ˹ {bot_display} ˼  🍃**
+๏ ᴛʜɪs ɪs  ˹ {bot_display} ˼  🍃
 
-**➻ ᴀ ғᴀsᴛ & ᴘᴏᴡᴇʀғᴜʟ ᴀɪ ʙᴏᴛ**
+➻ ᴀ ғᴀsᴛ & ᴘᴏᴡᴇʀғᴜʟ ᴀɪ ʙᴏᴛ
 
-**▸ 𝐀ɪ ᴄʜᴀᴛ • sᴍᴀʀᴛ ʀᴇsᴘᴏɴsᴇs 🤖**
-**▸ 𝐒ᴇᴄᴜʀɪᴛʏ • ᴀɴᴛɪ-sᴘᴀᴍ ✨**
-**▸ 𝐌ᴀɴᴀɢᴇ • ᴀᴜᴛᴏ-ʀᴇᴘʟʏ & ɴᴏᴛᴇs 🍃**
-**────────────────────**
+▸ 𝐀ɪ ᴄʜᴀᴛ • sᴍᴀʀᴛ ʀᴇsᴘᴏɴsᴇs 🤖
+▸ 𝐒ᴇᴄᴜʀɪᴛʏ • ᴀɴᴛɪ-sᴘᴀᴍ ✨
+▸ 𝐌ᴀɴᴀɢᴇ • ᴀᴜᴛᴏ-ʀᴇᴘʟʏ & ɴᴏᴛᴇs 🍃
+────────────────────
+
+๏ ᴘᴏᴡᴇʀᴇᴅ ʙʏ  ˹ ᴀsᴛᴀ ꭙ ꜱᴜᴘᴘᴏʀᴛ ˼
 """
 
 
 # =======================================================
-# START BUTTONS
+# MAIN BUTTONS
 # =======================================================
 
 def get_start_buttons():
@@ -65,9 +72,210 @@ def get_start_buttons():
                     "✚ ᴧᴅᴅ ϻᴇ ɪη ʏσυʀ ɢʀσυᴘ ✚",
                     url=f"https://t.me/{bot_username}?startgroup=true",
                 )
+            ],
+            [
+                InlineKeyboardButton(
+                    "˹ ᴅєᴠєʟσᴘєʀ ˼",
+                    url="https://t.me/zxasta",
+                ),
+                InlineKeyboardButton(
+                    "˹ ʟᴧηɢυᴧɢє ˼",
+                    callback_data="language_panel",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "˹ ʜєʟᴘ ᴧηᴅ ᴄσϻϻᴧηᴅs ˼",
+                    callback_data="help_panel",
+                )
+            ],
+        ]
+    )
+
+
+# =======================================================
+# HELP PANEL
+# =======================================================
+
+def get_help_text():
+    return """
+๏ ʜєʟᴘ & ᴄσϻϻᴧηᴅs 🤖
+
+➻ ɢʀσυᴘ ᴄʜᴧᴛ
+
+▸ ʜєʟʟσ ᴧɪ
+   → Say "hello ai" in the group to chat with me.
+
+▸ ϻєηᴛɪση
+   → Mention me and send your message.
+
+▸ ʀєᴘʟʏ
+   → Reply to my message to continue chatting.
+
+────────────────────
+
+➻ ᴘʀɪᴠᴧᴛє ᴄʜᴧᴛ
+
+▸ Send any message in private chat to talk with AI.
+
+────────────────────
+
+๏ ᴘσᴡєʀєᴅ ʙʏ  ˹ ᴀsᴛᴀ ꭙ ꜱᴜᴘᴘᴏʀᴛ ˼
+"""
+
+
+# =======================================================
+# HELP BUTTONS
+# =======================================================
+
+def get_help_buttons():
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    "‹ ʙᴧᴄᴋ",
+                    callback_data="back_start",
+                )
             ]
         ]
     )
+
+
+# =======================================================
+# LANGUAGE PANEL
+# =======================================================
+
+def get_language_text():
+    return """
+๏ ʟᴧηɢυᴧɢє sєʟєᴄᴛɪση 🌐
+
+➻ Choose your preferred language.
+
+Your selected language will be used for
+the bot's panels, buttons and messages.
+"""
+
+
+# =======================================================
+# LANGUAGE BUTTONS
+# =======================================================
+
+def get_language_buttons():
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
+                InlineKeyboardButton("🇮🇳 हिन्दी", callback_data="lang_hi"),
+            ],
+            [
+                InlineKeyboardButton("🇵🇰 اردو", callback_data="lang_ur"),
+                InlineKeyboardButton("🇸🇦 العربية", callback_data="lang_ar"),
+            ],
+            [
+                InlineKeyboardButton("🇧🇩 বাংলা", callback_data="lang_bn"),
+                InlineKeyboardButton("🇮🇳 தமிழ்", callback_data="lang_ta"),
+            ],
+            [
+                InlineKeyboardButton(
+                    "‹ ʙᴧᴄᴋ",
+                    callback_data="back_start",
+                )
+            ],
+        ]
+    )
+
+
+# =======================================================
+# CALLBACK HANDLER
+# =======================================================
+
+@app.on_callback_query(
+    filters.regex(
+        r"^(help_panel|language_panel|back_start|lang_)"
+    )
+)
+async def start_callback(client, query: CallbackQuery):
+
+    data = query.data
+
+    try:
+        await query.answer()
+    except Exception:
+        pass
+
+    # ---------------------------------------------------
+    # HELP
+    # ---------------------------------------------------
+
+    if data == "help_panel":
+
+        await query.message.edit_caption(
+            caption=get_help_text(),
+            reply_markup=get_help_buttons(),
+        )
+
+        return
+
+    # ---------------------------------------------------
+    # LANGUAGE
+    # ---------------------------------------------------
+
+    if data == "language_panel":
+
+        await query.message.edit_caption(
+            caption=get_language_text(),
+            reply_markup=get_language_buttons(),
+        )
+
+        return
+
+    # ---------------------------------------------------
+    # BACK
+    # ---------------------------------------------------
+
+    if data == "back_start":
+
+        await query.message.edit_caption(
+            caption=get_start_text(),
+            reply_markup=get_start_buttons(),
+        )
+
+        return
+
+    # ---------------------------------------------------
+    # LANGUAGE SELECTION
+    # ---------------------------------------------------
+
+    if data.startswith("lang_"):
+
+        language = data.replace("lang_", "")
+
+        # Temporary confirmation.
+        # Full translation system can be connected
+        # to database afterwards.
+
+        names = {
+            "en": "English 🇬🇧",
+            "hi": "Hindi 🇮🇳",
+            "ur": "Urdu 🇵🇰",
+            "ar": "Arabic 🇸🇦",
+            "bn": "Bengali 🇧🇩",
+            "ta": "Tamil 🇮🇳",
+        }
+
+        selected = names.get(language, "English 🇬🇧")
+
+        await query.answer(
+            f"Language selected: {selected}",
+            show_alert=False,
+        )
+
+        await query.message.edit_caption(
+            caption=get_start_text(),
+            reply_markup=get_start_buttons(),
+        )
+
+        return
 
 
 # =======================================================
