@@ -4,7 +4,7 @@ import logging
 import requests
 from pyrogram import filters
 from ASTA_CHAT import app
-from ASTA_CHAT.database.language import get_user_language
+from ASTA_CHAT.database.chatbot import get_user_language
 from google import genai
 import config
 
