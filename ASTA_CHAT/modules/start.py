@@ -714,35 +714,30 @@ async def start_command(
 
     user_id = message.from_user.id
 
-    text = await get_start_text(
-        user_id
-    )
-
-    buttons = await get_start_buttons(
-        user_id
-    )
+    text = await get_start_text(user_id)
+    buttons = await get_start_buttons(user_id)
 
     try:
-
         await message.reply_photo(
             photo=START_IMAGE,
             caption=text,
             reply_markup=buttons,
         )
 
-    except Exception:
+    except Exception as e:
+
+        print(
+            f"[START] Photo failed: {type(e).__name__}: {e}"
+        )
 
         try:
-
             await message.reply_text(
                 text,
                 reply_markup=buttons,
             )
 
-        except Exception:
-            pass
+        except Exception as e2:
 
-
-# =======================================================
-# ©️ 2026-27 ASTA
-# =======================================================
+            print(
+                f"[START] Text failed: {type(e2).__name__}: {e2}"
+            )
